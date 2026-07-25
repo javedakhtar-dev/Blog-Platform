@@ -67,7 +67,7 @@ const comments = async (req, res) => {
             blog: blogId
         }).sort({
             createdAt: -1
-        })
+        }).populate("author", "name");
         res.json({
             success: true,
             message: "Comment featched successfully",

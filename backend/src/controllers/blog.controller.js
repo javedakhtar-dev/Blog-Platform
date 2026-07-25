@@ -71,7 +71,7 @@ const getBlog = async (req, res) => {
     }
 
     const onPage = Math.max(parseInt(page) || 1, 1);
-    const limitBlog = Math.min(parseInt(limit) || 20, 20);
+    const limitBlog = Math.min(parseInt(limit) || 10, 10);
     
     const skipBlog = ( onPage - 1 ) * limitBlog;
 
@@ -84,7 +84,7 @@ const getBlog = async (req, res) => {
             skipBlog
         ).limit(
             limitBlog
-        )
+        ).populate("author", "name");
 
         const totalBlogs = await Blog.countDocuments(filter);
         const totalPages = Math.ceil(totalBlogs / limitBlog);
@@ -111,7 +111,7 @@ const getSlugBlog = async (req, res) => {
     try {
         const blog = await Blog.findOne({
             slug
-        });
+        }).populate("author", "name");;
 
         if (!blog) {
             return res.status(404).json({
@@ -182,12 +182,20 @@ const updateBlog = async (req, res) => {
 }
 
 const deleteBlog = async (req, res) => {
-    const { blogId } = req.params;
+    const { id } = req.params;
     try {
         const blog = await Blog.findOneAndDelete({
-            _id: blogId,
+            _id: id,
             author: req.userId
         })
+
+        if (!blog) {
+            return res.status(404).json({
+                success: false,
+                message: "Blog not found or you are not authorized.",
+            });
+        }
+
         return res.json({
             success: true,
             message: 'Blog deleted successfully'
@@ -203,11 +211,13 @@ const deleteBlog = async (req, res) => {
 
 const getMyBlog = async (req, res) => {
     try {
-        const blog = await Blog.findOne({
+        const blogs = await Blog.find({
             author: req.userId
-        });
+        }).sort({
+            createdAt: -1
+        }).populate("author", "name");;
 
-        if (!blog) {
+        if (!blogs) {
             return res.status(404).json({
                 success: false,
                 message: "Blog not found"
@@ -217,7 +227,7 @@ const getMyBlog = async (req, res) => {
         return res.json({
             success: true,
             message: 'Blog founded',
-            blog
+            blogs
         })
     } catch (err) {
         console.error(err);
